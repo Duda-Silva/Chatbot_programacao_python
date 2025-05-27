@@ -1,16 +1,18 @@
-# 💬 Chatbot de Programação com SQLite e Tkinter
-Este projeto é um chatbot educacional em Python focado em responder dúvidas sobre programação. Ele possui uma base de dados local com explicações e exemplos sobre diversos conceitos da linguagem Python, apresentados por meio de uma interface gráfica construída com Tkinter.
+# 🤖 Chatbot de Programação com Interface Gráfica (Tkinter)
+Este projeto é um chatbot educativo desenvolvido em Python com Tkinter que responde dúvidas sobre programação. Ele utiliza banco de dados SQLite para armazenar conceitos, exemplos, interações com o usuário e agora conta com busca semântica em arquivos PDF.
 
-## 🧠 Funcionalidades
-- Interface gráfica para interação com o usuário.
+## 📌 Funcionalidades
+- ✅ Interface gráfica com Tkinter.
 
-- Base de dados com conceitos organizados por tópicos e níveis (básico, intermediário, avançado).
+- ✅ Base de conhecimento armazenada em SQLite (conceito_programacao).
 
-- Registro de interações do usuário para futura análise de uso.
+- ✅ Registro de interações do usuário (interacoes_usuario).
 
-- Retorno de explicações e exemplos práticos com base na pergunta feita.
+- ✅ Respostas com explicações e exemplos de código.
 
-- Integração com banco de dados SQLite.
+- ✅ Mensagens de aviso e validação de entrada.
+
+- ✅ Busca de respostas diretamente de um arquivo PDF usando embeddings semânticos com sentence-transformers.
 
 ## 🛠️ Tecnologias Utilizadas
 - Python 3.x
@@ -21,8 +23,12 @@ Este projeto é um chatbot educacional em Python focado em responder dúvidas so
 
 - datetime, messagebox e scrolledtext (módulos padrão do Python)
 
+- sentence-transformers, pymupdf, scrolledtext
+
 ## 📦 Instalação
 - Clone este repositório ou copie os arquivos para seu ambiente local.
+
+instalção no promp: pip install sentence-transformers pymupdf
 
 - Execute o script Python:
 Certifique-se de que você possui Python instalado (versão 3.6 ou superior).
@@ -32,21 +38,36 @@ Certifique-se de que você possui Python instalado (versão 3.6 ou superior).
 
 - Digite uma pergunta sobre programação (ex: "O que é uma função lambda?").
 
-- O chatbot buscará na base de dados e responderá com uma explicação e exemplo.
+- E escolhar entre Perguntar no Banco de Dados ou Perguntar no PDF.
+
+- O chatbot buscará na base de dados ou PDF e responderá com uma explicação e exemplo.
 
 - O histórico das interações é salvo automaticamente no banco de dados chatbot.db.
+
+## 🗂 Organização
+- chatbot.py: Arquivo principal com interface gráfica, lógica e banco de dados.
+
+- chatbot.db: Banco de dados SQLite (gerado automaticamente na primeira execução).
+
+caminho_pdf: Arquivo PDF utilizado como base alternativa de conhecimento.
 
 ## 🗃️ Estrutura do Banco de Dados
 - conceito_programacao: contém os conceitos, exemplos e níveis de dificuldade.
 
 - interacoes_usuario: registra perguntas feitas, respostas geradas, data/hora e se a resposta foi útil.
 
-## 📌 Exemplos de Perguntas
-- Como funciona o if-else em Python?
+## 📌 Exemplos de Perguntas do Banco 
+O que é uma lista em Python e como ela é declarada?
 
-- O que é herança na programação orientada a objetos?
+Qual a principal característica de uma tupla em Python?
 
-- Para que serve o Flask?
+Como um dicionário funciona em Python?
+
+Para que serve um conjunto em Python e qual sua principal característica?
+
+Como se define uma função simples em Python?
+
+Qual é o papel dos parâmetros em uma função?
 
 ## ⚠️ Observações
 A busca por respostas é feita de forma simples, com base na ocorrência de palavras-chave.

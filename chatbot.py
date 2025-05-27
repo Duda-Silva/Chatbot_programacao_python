@@ -3,12 +3,29 @@ import tkinter as tk
 from tkinter import scrolledtext
 from tkinter import scrolledtext, messagebox # Importa messagebox para mensagens de erro/confirmação
 from datetime import datetime # Para obter a data e hora atual
+import fitz  # PyMuPDF
+from sentence_transformers import SentenceTransformer, util
+
+# Função para extrair texto do PDF
+caminho_pdf = "EBOOK _INTRODUÇÃO_A _PYTHON _(EDITORA IFRN).pdf"
+# 1. Carregar modelo
+modelo = SentenceTransformer('all-MiniLM-L6-v2')  # pequeno e rápido
+
+# 2. Extrair texto do PDF
+def extrair_blocos_pdf(caminho_pdf):
+    doc = fitz.open(caminho_pdf)
+    blocos = []
+    for pagina in doc:
+        texto = pagina.get_text().strip().split("\n\n")
+        blocos.extend([t.strip() for t in texto if len(t.strip()) > 40])  # Ignora blocos muito curtos
+    doc.close()
+    return blocos
+
+blocos_pdf = extrair_blocos_pdf(caminho_pdf)
 
 # Configuração do banco de dados
 conn = sqlite3.connect("chatbot.db")
 cursor = conn.cursor()
-
-
 
 # Criando tabela para armazenar conceitos de programação
 cursor.execute("""
@@ -73,6 +90,32 @@ for topico, termo, explicacao, exemplo, nivel in respostas:
     cursor.execute("INSERT INTO conceito_programacao (topico, termo, explicacao, exemplo, nivel) VALUES (?, ?, ?, ?, ?)", (topico, termo, explicacao, exemplo, nivel))
 conn.commit()
 
+
+# Inserção de dados apenas se ainda não existirem
+cursor.execute("SELECT COUNT(*) FROM conceito_programacao")
+if cursor.fetchone()[0] == 0:
+    respostas = [
+        ('Estruturas de Controle', 'O que a estrutura condicional "if" permite fazer em Python?', 'Permite a execução condicional de um bloco de código.', 'if x > 0:\n    print("Positivo")', 'Básico'),
+        # ... (demais registros omitidos por brevidade)
+    ]
+    for topico, termo, explicacao, exemplo, nivel in respostas:
+        cursor.execute("""
+            INSERT INTO conceito_programacao (topico, termo, explicacao, exemplo, nivel)
+            VALUES (?, ?, ?, ?, ?)""", (topico, termo, explicacao, exemplo, nivel))
+    conn.commit()
+
+    
+# 3. Criar embeddings para os blocos do PDF
+embeddings_blocos = modelo.encode(blocos_pdf, convert_to_tensor=True)
+
+# 4. Função para responder perguntas com similaridade semântica
+def responder(pergunta):
+    emb_pergunta = modelo.encode(pergunta, convert_to_tensor=True)
+    similaridades = util.pytorch_cos_sim(emb_pergunta, embeddings_blocos)[0]
+    indice_mais_similar = similaridades.argmax()
+    return blocos_pdf[indice_mais_similar]
+
+
 # Função para obter resposta do chatbot
 def obter_resposta(pergunta):
     # Normalizando a pergunta para facilitar a busca
@@ -101,21 +144,31 @@ def obter_resposta(pergunta):
         return resposta, interacao_id
     else:
         return "Não encontrei uma resposta para essa pergunta. Talvez você possa reformular?", None
-
-
 # Função chamada ao clicar no botão
-def enviar_pergunta():
+def enviar_pergunta_pdf():
     pergunta = entrada.get()
-    if not pergunta.lower():
+    if not pergunta:
         messagebox.showwarning("Aviso", "Digite uma pergunta.")
         return
-    resposta = obter_resposta(pergunta)
+    resposta = responder(pergunta)
     txt_resposta.config(state='normal')
     txt_resposta.delete("1.0", tk.END)
     txt_resposta.insert(tk.END, resposta)
     txt_resposta.config(state='disabled')
-    
 
+def enviar_pergunta():
+    pergunta = entrada.get()
+    if not pergunta.strip():
+        messagebox.showwarning("Aviso", "Digite uma pergunta.")
+        return
+
+    resposta, _ = obter_resposta(pergunta)
+    txt_resposta.config(state='normal')
+    txt_resposta.delete("1.0", tk.END)
+    txt_resposta.insert(tk.END, resposta)
+    txt_resposta.config(state='disabled')
+    entrada.delete(0, tk.END)
+    
 
 # Interface gráfica
 janela = tk.Tk()
@@ -125,22 +178,19 @@ janela.geometry("800x450")
 label_titulo = tk.Label(janela, text="Chatbot de Programação", font=("Arial", 16, "bold"))
 label_titulo.pack(pady=5)
 
-entrada = label_instrucao = tk.Label(janela, text="Digite sua pergunta sobre programação(ou 'sair' para encerrar):")
+label_instrucao = tk.Label(janela, text="Digite sua pergunta sobre programação (ou 'sair' para encerrar):")
 label_instrucao.pack()
-if entrada.lower() == 'sair':
-    janela.destroy()
-    
+
 entrada = tk.Entry(janela, width=60)
 entrada.pack(pady=5)
-#botão para enviar a pergunta
-btn_enviar = tk.Button(janela, text="Perguntar", command=enviar_pergunta)
+
+btn_enviar = tk.Button(janela, text="Perguntar no Banco de Dados", command=enviar_pergunta)
 btn_enviar.pack(pady=5)
-  
+
+btn_enviar_pdf = tk.Button(janela, text="Perguntar no PDF", command=enviar_pergunta_pdf)
+btn_enviar_pdf.pack(pady=5)
+
 txt_resposta = scrolledtext.ScrolledText(janela, wrap=tk.WORD, width=70, height=10, state='disabled')
 txt_resposta.pack(pady=10)
 
 janela.mainloop()
-
-
-
-
